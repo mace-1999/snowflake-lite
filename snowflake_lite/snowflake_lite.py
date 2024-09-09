@@ -83,7 +83,32 @@ class Snowflake_Connection:
         '''
         cur = self.conn.cursor()
         cur.execute(query)
+        print('Query Complete.')
         dat = cur.fetchall()
         df = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
         cur.close()
         return df
+    
+
+    def make_query_and_return_pandas_df_batched(self, query):
+        '''
+        Query the snowflake db and return
+        a pandas df of the results.
+        '''
+        cur = self.conn.cursor()
+        cur.execute(query)
+        print('Query Complete.')
+        df = pd.DataFrame()
+        dat = cur.fetchmany(200000)
+        df = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
+        num = len(dat)
+        while len(dat) > 0:
+            dat = cur.fetchmany(200000)
+            df_tmp = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
+            df = pd.concat([df, df_tmp])
+            num += 500000
+            print(f'Collecting {num}')
+
+        cur.close()
+        return df
+    
