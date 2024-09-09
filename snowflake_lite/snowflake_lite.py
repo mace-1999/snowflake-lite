@@ -98,16 +98,17 @@ class Snowflake_Connection:
         cur = self.conn.cursor()
         cur.execute(query)
         print('Query Complete.')
-        df = pd.DataFrame()
-        dat = cur.fetchmany(200000)
-        df = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
-        num = len(dat)
-        while len(dat) > 0:
-            dat = cur.fetchmany(200000)
-            df_tmp = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
-            df = pd.concat([df, df_tmp])
-            num += 500000
-            print(f'Collecting {num}')
+        df_full = pd.DataFrame()
+        rows = 0
+        while True:
+            dat = cur.fetchmany(50000)
+            if not dat:
+                break
+            df = pd.DataFrame(dat, columns=[col[0] for col in cur.description])
+            df_full = pd.concat([df_full, df])
+            rows += df.shape[0]
+            print(rows)
+        print(rows)
 
         cur.close()
         return df
